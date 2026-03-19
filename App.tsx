@@ -26,6 +26,7 @@ import { SOSIcon } from './components/icons/SOSIcon';
 import { CloudIcon } from './components/icons/CloudIcon';
 import { auth, isFirebaseConfigured } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { startNFCScan, isNFCSupported, writeNFCSOSTag } from './services/nfcService';
 
 // Dữ liệu mẫu tĩnh (Static Data) - Chỉ dùng để hiển thị khi người dùng chưa nhập gì
 const initialReports: EnvironmentalReport[] = [
@@ -194,6 +195,41 @@ const App: React.FC = () => {
   // Auto Monitoring Mode State
   const [isAutoMonitoring, setIsAutoMonitoring] = useState<boolean>(false);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
+  const [isNFCLinking, setIsNFCLinking] = useState(false);
+
+  // Handle URL parameters for deep linking (e.g., NFC tap)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view');
+    if (viewParam === 'sos') {
+      setView('sos');
+      // Clear the param to avoid re-triggering on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Initialize NFC scanning
+  useEffect(() => {
+    let nfcReader: any = null;
+    
+    const initNFC = async () => {
+      if (isNFCSupported()) {
+        nfcReader = await startNFCScan(
+          () => {
+            setView('sos');
+            addToast('NFC: Đã kích hoạt chế độ SOS khẩn cấp!', 'warning');
+          },
+          (msg) => console.log("NFC Info:", msg)
+        );
+      }
+    };
+
+    initNFC();
+
+    return () => {
+      // Web NFC doesn't have a standard stop() but we can ignore future events
+    };
+  }, []);
 
   // Initialize auto-monitoring for mobile on mount
   useEffect(() => {
@@ -860,6 +896,12 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLinkNFCTag = async () => {
+    setIsNFCLinking(true);
+    await writeNFCSOSTag(addToast);
+    setIsNFCLinking(false);
+  };
+
   const handleMarkNotificationAsRead = async (id: number) => {
     try {
       const token = localStorage.getItem('token');
@@ -965,6 +1007,8 @@ const App: React.FC = () => {
                   notifications={notifications}
                   onMarkNotificationAsRead={handleMarkNotificationAsRead}
                   onSelectReport={handleSelectReportFromNotification}
+                  onLinkNFCTag={handleLinkNFCTag}
+                  isNFCLinking={isNFCLinking}
                 />;
       default:
         return <HomeView 
