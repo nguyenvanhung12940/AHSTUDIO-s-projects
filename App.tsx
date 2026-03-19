@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import * as L from 'leaflet';
+import { Analytics } from '@vercel/analytics/react';
 import { analyzeEnvironmentalImage, askAIAboutEnvironment, generateAIImage } from './services/geminiService';
 import { saveOfflineReport, getOfflineReports, deleteOfflineReport, compressImage } from './services/offlineService';
 import { EnvironmentalReport, AIAnalysis, ReportStatus, ChatMessage, ToastMessage, EducationalTopic, EnvironmentalPOI, EnvironmentalNotification } from './types';
@@ -785,7 +786,7 @@ const App: React.FC = () => {
               addToast('Cập nhật trạng thái báo cáo thành công!');
         }
     } catch (error) {
-        addToast('Lỗi cập nhật trạng thái', 'error');
+        addToast('Lỗi cập nhật trạng th��i', 'error');
     }
   };
 
@@ -1189,6 +1190,7 @@ const App: React.FC = () => {
         onSubmit={handleChatSubmit}
         onClearChat={handleClearChat}
       />
+      <Analytics />
     </div>
   );
 };
