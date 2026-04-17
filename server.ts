@@ -12,6 +12,30 @@ import { supabase } from './services/supabaseClient';
 import dns from 'dns';
 import { promisify } from 'util';
 import fs from 'fs';
+import admin from 'firebase-admin';
+
+// Initialize Firebase Admin
+const FIREBASE_ADMIN_PATH = './serviceAccountKey.json';
+let firebaseAdminApp: admin.app.App | null = null;
+
+try {
+  // Try loading from environment variable first
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    firebaseAdminApp = admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON))
+    });
+    console.log('Firebase Admin: Initialized using environment variable.');
+  } 
+  // Then try loading from file
+  else if (fs.existsSync(FIREBASE_ADMIN_PATH)) {
+    firebaseAdminApp = admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(fs.readFileSync(FIREBASE_ADMIN_PATH, 'utf8')))
+    });
+    console.log('Firebase Admin: Initialized using local serviceAccountKey.json.');
+  }
+} catch (error) {
+  console.error('Firebase Admin: Initialization failed:', (error as Error).message);
+}
 
 const lookup = promisify(dns.lookup);
 
